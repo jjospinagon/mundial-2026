@@ -1220,26 +1220,6 @@ function init(){
   fetchData(true);
   startTimer();
 }
-  document.querySelectorAll(".tab").forEach(function(t){
-    t.addEventListener("click",function(){ setView(t.getAttribute("data-v")); });
-  });
-  document.getElementById("v-cal").addEventListener("click",function(e){
-    var c=e.target.closest(".chip"); if(c){ CAL_FILTER=c.getAttribute("data-c"); renderCalendar(); }
-  });
-  document.getElementById("rate").addEventListener("change",startTimer);
-  document.getElementById("syncBtn").addEventListener("click",function(){ fetchData(true); });
-  var sb=document.getElementById("soundBtn"); if(sb) sb.addEventListener("click",toggleSound);
-  var cb=document.getElementById("celebBtn"); if(cb) cb.addEventListener("click",demoCelebrate);
-
-  startFX();
-  startIntro();
-
-  // pinta semilla de inmediato (offline)
-  applyData(fromSeed(), false);
-  // primer fetch + temporizador
-  fetchData(true);
-  startTimer();
-}
 if(document.readyState!=="loading") init();
 else document.addEventListener("DOMContentLoaded",init);
 </script>

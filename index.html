@@ -239,6 +239,10 @@ footer code{color:var(--neon-dim);font-family:var(--mono);font-size:10px}
 /* ====== FONDO VIVO (canvas) ====== */
 #fx{position:fixed;inset:0;z-index:0;pointer-events:none}
 
+/* ====== MINI-BANDERA CSS (respaldo Windows) ====== */
+.cflag{display:inline-block;width:1.45em;height:1em;border-radius:.14em;vertical-align:-0.13em;
+  box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.4);background-size:cover!important}
+
 /* ====== INTRO CINEMATOGRÁFICA ====== */
 #intro{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   background:radial-gradient(120% 90% at 50% 32%, #07401f, #010b06 72%);overflow:hidden;transition:opacity .9s ease;cursor:pointer}
@@ -306,6 +310,38 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
 .card.mine{box-shadow:var(--shadow),inset 4px 0 0 var(--gold)}
 .card.mine .crow .cven{color:var(--gold)}
 @media (max-width:560px){ .myband .mypos{display:none} }
+
+/* ====== VENTANA: VER EN VIVO ====== */
+.watchbtn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgba(51,255,138,.5);
+  background:linear-gradient(160deg, rgba(51,255,138,.24), rgba(8,32,18,.6));color:#eafff2;border-radius:11px;
+  padding:9px 16px;font-weight:700;letter-spacing:.05em;font-size:13px;margin-top:12px;
+  box-shadow:0 6px 18px -8px rgba(51,255,138,.6);transition:transform .12s ease}
+.watchbtn:hover{transform:translateY(-1px)}
+.watchbtn.sm{padding:6px 11px;font-size:11px;margin-top:9px;width:100%;justify-content:center}
+#watch{position:fixed;inset:0;z-index:290;display:none;align-items:center;justify-content:center;padding:14px;
+  background:rgba(1,7,4,.84);backdrop-filter:blur(7px)}
+#watch.show{display:flex;animation:fade .25s ease}
+.wwin{width:min(960px,97vw);max-height:93vh;display:flex;flex-direction:column;overflow:hidden;border-radius:16px;
+  background:#04140c;border:1px solid var(--panel-brd);box-shadow:var(--shadow)}
+.whead{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--panel-brd);
+  background:linear-gradient(160deg,rgba(51,255,138,.12),transparent)}
+.whead .wt{flex:1;min-width:0;font-weight:700;font-size:14px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.whead .wx{cursor:pointer;border:0;background:rgba(255,255,255,.10);color:#fff;border-radius:9px;padding:6px 12px;font-size:15px;line-height:1}
+.wframe{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden}
+.wframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.wfall{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;color:var(--mut);padding:22px;font-size:13px;z-index:2;
+  background:radial-gradient(120% 100% at 50% 30%, rgba(12,40,24,.6), rgba(0,0,0,.9))}
+.wfall .em{font-size:40px}
+.wsrc{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px}
+.wsrc a{flex:1 1 40%;text-align:center;text-decoration:none;border:1px solid var(--panel-brd);border-radius:11px;
+  padding:11px 8px;color:var(--txt);font-size:13px;font-weight:700;background:rgba(255,255,255,.03);transition:transform .12s,border-color .2s}
+.wsrc a:hover{transform:translateY(-1px)}
+.wsrc a b{display:block;font-size:10px;color:var(--mut);font-weight:600;letter-spacing:.04em;margin-top:3px}
+.wsrc a.free{border-color:rgba(51,255,138,.5)}
+.wsrc a.free b{color:var(--neon)}
+.wnote{font-size:11px;color:var(--mut2);padding:0 14px 14px;line-height:1.55}
+.wnote b{color:var(--neon-dim)}
 @media (max-width:560px){
   .board{grid-template-columns:1fr auto 1fr;gap:6px}
   .tab{font-size:11px;letter-spacing:.06em;padding:9px 8px}
@@ -336,6 +372,18 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
     <div class="gteam"></div>
     <div class="gscore"></div>
     <div class="gdismiss">toca para cerrar</div>
+  </div>
+</div>
+
+<div id="watch">
+  <div class="wwin">
+    <div class="whead"><span class="wt" id="wTitle">Ver en vivo</span><button class="wx" id="wClose">✕</button></div>
+    <div class="wframe">
+      <iframe id="wFrame" allow="autoplay; fullscreen; encrypted-media" allowfullscreen referrerpolicy="no-referrer"></iframe>
+      <div class="wfall" id="wFall"><div class="em">📡</div><div>Conectando con la señal oficial…<br>Si el canal bloquea la reproducción aquí, abre la transmisión con un botón ↓</div></div>
+    </div>
+    <div class="wsrc" id="wSrc"></div>
+    <div class="wnote">Por derechos de transmisión, los canales suelen <b>bloquear el video incrustado</b>. Toca un botón para abrir la transmisión <b>oficial</b> (nueva pestaña). Gratis en señal abierta: Gol Caracol y RCN (todos los partidos de Colombia y selectos). Los 104 partidos: DSports/DGO.</div>
   </div>
 </div>
 
@@ -441,7 +489,47 @@ function resolveAbbr(abbr, name){
   if(name && ALIAS[name]) return ALIAS[name];
   return abbr || null;
 }
-function T(ab){ return TEAMS[ab] || {es:ab||"Por definir", g:"?", f:"🏳️"}; }
+function T(ab){ return TEAMS[ab] || {es:ab||"Por definir", g:"?", f:FLAG_NA}; }
+
+/* ============================================================
+   BANDERAS ROBUSTAS (Windows no renderiza emoji de país)
+   Colores oficiales por selección -> mini-bandera CSS de respaldo
+   ============================================================ */
+var COLORS={
+  MEX:["#006847","#ffffff","#ce1126"], RSA:["#007a4d","#ffb612","#000000"], KOR:["#ffffff","#cd2e3a","#0047a0"], CZE:["#ffffff","#d7141a","#11457e"],
+  CAN:["#d52b1e","#ffffff","#d52b1e"], BIH:["#002395","#fecb00"], QAT:["#8a1538","#ffffff"], SUI:["#d52b1e","#ffffff"],
+  BRA:["#009b3a","#fedf00","#002776"], MAR:["#c1272d","#006233"], HAI:["#00209f","#d21034"], SCO:["#005eb8","#ffffff"],
+  USA:["#b22234","#ffffff","#3c3b6e"], PAR:["#d52b1e","#ffffff","#0038a8"], AUS:["#00008b","#ffffff","#e4002b"], TUR:["#e30a17","#ffffff"],
+  GER:["#000000","#dd0000","#ffce00"], CUW:["#012a87","#f9d90f"], CIV:["#f77f00","#ffffff","#009e60"], ECU:["#ffd100","#0072c6","#ef3340"],
+  NED:["#ae1c28","#ffffff","#21468b"], JPN:["#ffffff","#bc002d"], TUN:["#e70013","#ffffff"], SWE:["#006aa7","#fecc00"],
+  BEL:["#000000","#fdda24","#ef3340"], EGY:["#ce1126","#ffffff","#000000"], IRN:["#239f40","#ffffff","#da0000"], NZL:["#00247d","#cc142b"],
+  ESP:["#aa151b","#f1bf00","#aa151b"], CPV:["#003893","#ffffff","#cf2027"], URU:["#7b9ce1","#ffffff","#0038a8"], KSA:["#006c35","#ffffff"],
+  FRA:["#0055a4","#ffffff","#ef4135"], SEN:["#00853f","#fdef42","#e31b23"], NOR:["#ba0c2f","#ffffff","#00205b"], IRQ:["#ce1126","#ffffff","#000000"],
+  ARG:["#74acdf","#ffffff","#74acdf"], ALG:["#006233","#ffffff","#d21034"], AUT:["#ed2939","#ffffff","#ed2939"], JOR:["#000000","#ffffff","#007a3d"],
+  POR:["#006600","#ff0000"], COD:["#007fff","#f7d618","#ce1021"], UZB:["#0099b5","#ffffff","#1eb53a"], COL:["#fcd116","#003893","#ce1126"],
+  ENG:["#ffffff","#ce1124","#ffffff"], CRO:["#ff0000","#ffffff","#171796"], GHA:["#ce1126","#fcd116","#006b3f"], PAN:["#005293","#ffffff","#d21034"]
+};
+var FLAG_NA='<span class="cflag" style="background:repeating-linear-gradient(45deg,#456,#456 4px,#577 4px,#577 8px)"></span>';
+function chip(ab){
+  var c=COLORS[ab]; if(!c) return FLAG_NA;
+  var n=c.length, st=[];
+  for(var i=0;i<n;i++){ st.push(c[i]+" "+(i*100/n).toFixed(1)+"% "+((i+1)*100/n).toFixed(1)+"%"); }
+  return '<span class="cflag" style="background:linear-gradient(180deg,'+st.join(",")+')"></span>';
+}
+function flagEmojiSupported(){
+  try{
+    var cv=document.createElement("canvas"); cv.width=22; cv.height=16;
+    var ctx=cv.getContext("2d"); ctx.textBaseline="top"; ctx.font="16px serif"; ctx.fillText("🇨🇦",0,0);
+    var d=ctx.getImageData(0,0,22,16).data;
+    for(var i=0;i<d.length;i+=4){ if(d[i+3]>0 && (Math.abs(d[i]-d[i+1])>20 || Math.abs(d[i+1]-d[i+2])>20)) return true; }
+    return false; // se dibujó monocromo ("CA") -> sin soporte
+  }catch(e){ return true; }
+}
+function applyFlags(){
+  if(flagEmojiSupported()) return;   // Apple/Android: deja los emoji reales
+  FLAG_NA='<span class="cflag" style="background:repeating-linear-gradient(45deg,#456,#456 4px,#577 4px,#577 8px)"></span>';
+  for(var ab in TEAMS){ TEAMS[ab].f=chip(ab); }
+}
 
 /* ============================================================
    SEMILLA EMBEBIDA — fixtures reales (se reemplaza al sincronizar)
@@ -682,7 +770,8 @@ function renderHero(){
       '<div class="side"><div class="fl">'+a.f+'</div><div class="nm">'+a.nm+'</div><div class="ab">'+(m.away.abbr||"")+'</div></div>'+
     '</div>'+
     minuteEl+ so+
-    '<div class="prog"><span class="ht"></span><i style="width:'+prog+'%"></i></div>';
+    '<div class="prog"><span class="ht"></span><i style="width:'+prog+'%"></i></div>'+
+    (live? '<div style="text-align:center"><button class="watchbtn" onclick="openWatchById(\''+m.id+'\')">📺 Ver en vivo (gratis)</button></div>':'');
   if(!live && !fin) tickCountdown(m);
 }
 function tickCountdown(m){
@@ -720,9 +809,10 @@ function matchCard(m){
   }
   var flash=(STATE._goals&&STATE._goals[m.id])?" goalflash":"";
   var mine=(m.home.abbr===MY_TEAM||m.away.abbr===MY_TEAM)?" mine":"";
+  var watch=isLive(m)?'<button class="watchbtn sm" onclick="openWatchById(\''+m.id+'\')">📺 Ver gratis</button>':'';
   return '<div class="card'+flash+mine+'">'+
     '<div class="crow">'+st+'<span class="cven">'+phaseLabel(m.phase)+(m.venue?' · '+m.venue:'')+'</span></div>'+
-    row(m.home,h,"H")+row(m.away,a,"A")+ev+
+    row(m.home,h,"H")+row(m.away,a,"A")+ev+watch+
   '</div>';
 }
 
@@ -1037,7 +1127,7 @@ function confettiBurst(){
 function celebrate(team,scorer,score){
   var ov=document.getElementById("goalfx"); if(!ov) return;
   var t=T(team);
-  ov.querySelector(".gflag").textContent=t.f;
+  ov.querySelector(".gflag").innerHTML=t.f;
   ov.querySelector(".gscorer").textContent=scorer||"";
   ov.querySelector(".gteam").textContent=t.es;
   ov.querySelector(".gscore").textContent=score||"";
@@ -1069,7 +1159,53 @@ function demoCelebrate(){
   celebrate(team, "DEMO · ¡"+T(team).es+" anota!", sc);
 }
 
+/* ---- Ventana "Ver en vivo": transmisiones oficiales ---- */
+var WATCH=[
+  {n:"Gol Caracol", t:"Gratis · señal abierta", u:"https://www.golcaracol.com/", free:true},
+  {n:"Canal RCN",   t:"Gratis · señal abierta", u:"https://www.canalrcn.com/senal-en-vivo", free:true},
+  {n:"Ditu",        t:"Gratis · streaming",     u:"https://www.ditu.com/", free:true},
+  {n:"DSports / DGO", t:"Los 104 · suscripción", u:"https://www.dgo.com/", free:false}
+];
+function openWatchById(id){ for(var i=0;i<STATE.matches.length;i++){ if(STATE.matches[i].id===id){ openWatch(STATE.matches[i]); return; } } }
+function openWatch(m){
+  var w=document.getElementById("watch"); if(!w) return;
+  var h=T(m.home.abbr), a=T(m.away.abbr);
+  var title=document.getElementById("wTitle");
+  title.innerHTML=h.f+' '+h.es+'  vs  '+a.f+' '+a.es+(isLive(m)?'  <span style="color:var(--neon)">· EN VIVO</span>':'');
+  var fr=document.getElementById("wFrame"); try{ fr.src=WATCH[0].u; }catch(e){}
+  var html="";
+  for(var i=0;i<WATCH.length;i++){ var s=WATCH[i];
+    html+='<a class="'+(s.free?"free":"")+'" href="'+s.u+'" target="_blank" rel="noopener">'+s.n+'<b>'+s.t+'</b></a>';
+  }
+  document.getElementById("wSrc").innerHTML=html;
+  w.classList.add("show");
+}
+function closeWatch(){ var w=document.getElementById("watch"); if(!w)return; w.classList.remove("show"); var fr=document.getElementById("wFrame"); if(fr){ try{ fr.src="about:blank"; }catch(e){} } }
+
 function init(){
+  applyFlags(); // banderas: emoji en Apple/Android, mini-bandera CSS en Windows
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.addEventListener("click",function(){ setView(t.getAttribute("data-v")); });
+  });
+  document.getElementById("v-cal").addEventListener("click",function(e){
+    var c=e.target.closest(".chip"); if(c){ CAL_FILTER=c.getAttribute("data-c"); renderCalendar(); }
+  });
+  document.getElementById("rate").addEventListener("change",startTimer);
+  document.getElementById("syncBtn").addEventListener("click",function(){ fetchData(true); });
+  var sb=document.getElementById("soundBtn"); if(sb) sb.addEventListener("click",toggleSound);
+  var cb=document.getElementById("celebBtn"); if(cb) cb.addEventListener("click",demoCelebrate);
+  var wc=document.getElementById("wClose"); if(wc) wc.addEventListener("click",closeWatch);
+  var wv=document.getElementById("watch"); if(wv) wv.addEventListener("click",function(e){ if(e.target===wv) closeWatch(); });
+
+  startFX();
+  startIntro();
+
+  // pinta semilla de inmediato (offline)
+  applyData(fromSeed(), false);
+  // primer fetch + temporizador
+  fetchData(true);
+  startTimer();
+}
   document.querySelectorAll(".tab").forEach(function(t){
     t.addEventListener("click",function(){ setView(t.getAttribute("data-v")); });
   });

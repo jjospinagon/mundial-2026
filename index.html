@@ -310,6 +310,17 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
 .card.mine{box-shadow:var(--shadow),inset 4px 0 0 var(--gold)}
 .card.mine .crow .cven{color:var(--gold)}
 @media (max-width:560px){ .myband .mypos{display:none} }
+.mysel{margin-left:6px;background:#06180e;color:var(--gold);border:1px solid rgba(255,211,77,.4);border-radius:8px;
+  padding:3px 6px;font-family:var(--ui);font-size:11px;font-weight:700;outline:none;cursor:pointer;max-width:150px}
+.mysel:hover{border-color:var(--gold)}
+
+/* ====== BUSCADOR CALENDARIO ====== */
+.calsearch{display:flex;align-items:center;gap:8px;margin:2px 2px 12px;padding:9px 12px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--panel-brd);backdrop-filter:blur(8px)}
+.calsearch .cmag{opacity:.7;font-size:14px}
+.calsearch input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--txt);font-size:14px;font-family:var(--ui)}
+.calsearch input::placeholder{color:var(--mut2)}
+.calsearch .calx{cursor:pointer;border:0;background:rgba(255,255,255,.08);color:var(--txt);border-radius:7px;padding:4px 9px;font-size:13px;line-height:1}
 
 /* ====== VENTANA: VER EN VIVO ====== */
 .watchbtn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgba(51,255,138,.5);
@@ -372,18 +383,6 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
     <div class="gteam"></div>
     <div class="gscore"></div>
     <div class="gdismiss">toca para cerrar</div>
-  </div>
-</div>
-
-<div id="watch">
-  <div class="wwin">
-    <div class="whead"><span class="wt" id="wTitle">Ver en vivo</span><button class="wx" id="wClose">✕</button></div>
-    <div class="wframe">
-      <iframe id="wFrame" allow="autoplay; fullscreen; encrypted-media" allowfullscreen referrerpolicy="no-referrer"></iframe>
-      <div class="wfall" id="wFall"><div class="em">📡</div><div>Conectando con la señal oficial…<br>Si el canal bloquea la reproducción aquí, abre la transmisión con un botón ↓</div></div>
-    </div>
-    <div class="wsrc" id="wSrc"></div>
-    <div class="wnote">Por derechos de transmisión, los canales suelen <b>bloquear el video incrustado</b>. Toca un botón para abrir la transmisión <b>oficial</b> (nueva pestaña). Gratis en señal abierta: Gol Caracol y RCN (todos los partidos de Colombia y selectos). Los 104 partidos: DSports/DGO.</div>
   </div>
 </div>
 
@@ -510,7 +509,7 @@ var COLORS={
   ENG:["#ffffff","#ce1124","#ffffff"], CRO:["#ff0000","#ffffff","#171796"], GHA:["#ce1126","#fcd116","#006b3f"], PAN:["#005293","#ffffff","#d21034"]
 };
 var FLAG_NA='<span class="cflag" style="background:repeating-linear-gradient(45deg,#456,#456 4px,#577 4px,#577 8px)"></span>';
-function chip(ab){
+function flagChip(ab){
   var c=COLORS[ab]; if(!c) return FLAG_NA;
   var n=c.length, st=[];
   for(var i=0;i<n;i++){ st.push(c[i]+" "+(i*100/n).toFixed(1)+"% "+((i+1)*100/n).toFixed(1)+"%"); }
@@ -527,8 +526,7 @@ function flagEmojiSupported(){
 }
 function applyFlags(){
   if(flagEmojiSupported()) return;   // Apple/Android: deja los emoji reales
-  FLAG_NA='<span class="cflag" style="background:repeating-linear-gradient(45deg,#456,#456 4px,#577 4px,#577 8px)"></span>';
-  for(var ab in TEAMS){ TEAMS[ab].f=chip(ab); }
+  for(var ab in TEAMS){ TEAMS[ab].f=flagChip(ab); }
 }
 
 /* ============================================================
@@ -698,7 +696,7 @@ function startTimer(){
 function stamp(){
   var now=new Date();
   document.getElementById("lastsync").textContent="Última sincronización: "+
-    now.toLocaleString("es-CO",{timeZone:"America/Bogota",hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})+" (Colombia)";
+    now.toLocaleString("es",{hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})+" ("+TZLABEL+")";
 }
 
 /* ============================================================
@@ -706,7 +704,11 @@ function stamp(){
    ============================================================ */
 function flagName(ab){ var t=T(ab); return {f:t.f, nm:t.es}; }
 function isFinished(m){ return m.state==="post"; }
-function bogota(dateStr,opts){ var d=parseUTC(dateStr); if(!d)return"—"; return d.toLocaleString("es-CO",Object.assign({timeZone:"America/Bogota"},opts)); }
+/* Zona horaria del dispositivo: funciona igual en Colombia, EE. UU. o cualquier país */
+var TZ, TZLABEL;
+try{ TZ=Intl.DateTimeFormat().resolvedOptions().timeZone||"America/Bogota"; }catch(e){ TZ="America/Bogota"; }
+TZLABEL=(TZ.split("/").pop()||"local").replace(/_/g," ");
+function bogota(dateStr,opts){ var d=parseUTC(dateStr); if(!d)return"—"; try{ return d.toLocaleString("es",Object.assign({timeZone:TZ},opts)); }catch(e){ return d.toLocaleString("es",opts); } }
 
 function scoreCell(m){
   var hs=m.home.score, as=m.away.score;
@@ -770,8 +772,7 @@ function renderHero(){
       '<div class="side"><div class="fl">'+a.f+'</div><div class="nm">'+a.nm+'</div><div class="ab">'+(m.away.abbr||"")+'</div></div>'+
     '</div>'+
     minuteEl+ so+
-    '<div class="prog"><span class="ht"></span><i style="width:'+prog+'%"></i></div>'+
-    (live? '<div style="text-align:center"><button class="watchbtn" onclick="openWatchById(\''+m.id+'\')">📺 Ver en vivo (gratis)</button></div>':'');
+    '<div class="prog"><span class="ht"></span><i style="width:'+prog+'%"></i></div>';
   if(!live && !fin) tickCountdown(m);
 }
 function tickCountdown(m){
@@ -782,7 +783,7 @@ function tickCountdown(m){
     var s=Math.floor(diff/1000), d=Math.floor(s/86400); s-=d*86400;
     var hh=Math.floor(s/3600); s-=hh*3600; var mm=Math.floor(s/60); var ss=s-mm*60;
     var p=function(n){return (n<10?"0":"")+n;};
-    el.textContent="Comienza en "+(d>0?d+"d ":"")+p(hh)+":"+p(mm)+":"+p(ss)+"  ·  "+bogota(m.date,{weekday:"short",hour:"2-digit",minute:"2-digit"})+" COL";
+    el.textContent="Comienza en "+(d>0?d+"d ":"")+p(hh)+":"+p(mm)+":"+p(ss)+"  ·  "+bogota(m.date,{weekday:"short",hour:"2-digit",minute:"2-digit"})+" "+TZLABEL;
   }
   up(); if(STATE._cd) clearInterval(STATE._cd); STATE._cd=setInterval(up,1000);
 }
@@ -809,10 +810,9 @@ function matchCard(m){
   }
   var flash=(STATE._goals&&STATE._goals[m.id])?" goalflash":"";
   var mine=(m.home.abbr===MY_TEAM||m.away.abbr===MY_TEAM)?" mine":"";
-  var watch=isLive(m)?'<button class="watchbtn sm" onclick="openWatchById(\''+m.id+'\')">📺 Ver gratis</button>':'';
   return '<div class="card'+flash+mine+'">'+
     '<div class="crow">'+st+'<span class="cven">'+phaseLabel(m.phase)+(m.venue?' · '+m.venue:'')+'</span></div>'+
-    row(m.home,h,"H")+row(m.away,a,"A")+ev+watch+
+    row(m.home,h,"H")+row(m.away,a,"A")+ev+
   '</div>';
 }
 
@@ -928,18 +928,35 @@ function renderBracket(){
    PESTAÑA CALENDARIO
    ============================================================ */
 var CAL_FILTER="next";
+var CAL_Q="";
+function stripAcc(s){ try{ return (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(); }catch(e){ return (s||"").toLowerCase(); } }
 function renderCalendar(){
   var v=document.getElementById("v-cal");
-  var now=Date.now();
+  // si el usuario está escribiendo en el buscador, no reconstruir (evita perder el foco en cada refresco)
+  var ae=document.activeElement;
+  if(ae && ae.id==="calSearch" && document.getElementById("calResults")){ renderCalResults(); return; }
+  var filter='<div class="calfilter">'+
+    chip("next","Próximos")+chip("results","Resultados")+chip("all","Todos")+'</div>';
+  var search='<div class="calsearch"><span class="cmag">🔎</span>'+
+    '<input id="calSearch" type="search" placeholder="Buscar país (México, USA, Brasil…)" value="'+CAL_Q.replace(/"/g,"&quot;")+'" oninput="calType(this.value)" autocomplete="off">'+
+    '<button class="calx" onclick="calClear()" '+(CAL_Q?'':'style="visibility:hidden"')+'>✕</button></div>';
+  v.innerHTML='<div class="secttl">Calendario</div>'+filter+search+'<div class="cal" id="calResults"></div>';
+  renderCalResults();
+}
+function renderCalResults(){
+  var box=document.getElementById("calResults"); if(!box) return;
   var list;
   if(CAL_FILTER==="next") list=STATE.matches.filter(function(m){return !isFinished(m);}).sort(function(a,b){return ms(a.date)-ms(b.date);});
   else if(CAL_FILTER==="results") list=STATE.matches.filter(isFinished).sort(function(a,b){return ms(b.date)-ms(a.date);});
   else list=STATE.matches.slice().sort(function(a,b){return ms(a.date)-ms(b.date);});
-
-  var filter='<div class="calfilter">'+
-    chip("next","Próximos")+chip("results","Resultados")+chip("all","Todos")+'</div>';
-
-  // agrupar por día (hora Colombia)
+  if(CAL_Q){
+    var q=stripAcc(CAL_Q);
+    list=list.filter(function(m){
+      var hb=m.home.abbr, ab=m.away.abbr;
+      var hay=stripAcc(T(hb).es+" "+T(ab).es+" "+(hb||"")+" "+(ab||"")+" "+engName(hb)+" "+engName(ab));
+      return hay.indexOf(q)>=0;
+    });
+  }
   var groups=[],map={};
   list.forEach(function(m){
     var k=bogota(m.date,{weekday:"long",day:"2-digit",month:"long"});
@@ -947,12 +964,19 @@ function renderCalendar(){
     map[k].items.push(m);
   });
   var body=groups.map(function(g){
-    var rows=g.items.map(calRow).join("");
-    return '<div class="daygrp"><div class="dayhd">'+g.k+'</div>'+rows+'</div>';
+    return '<div class="daygrp"><div class="dayhd">'+g.k+'</div>'+g.items.map(calRow).join("")+'</div>';
   }).join("");
-  if(!body) body='<div class="emptol">Sin partidos en esta vista.</div>';
-  v.innerHTML='<div class="secttl">Calendario</div>'+filter+'<div class="cal">'+body+'</div>';
+  if(!body) body='<div class="emptol">'+(CAL_Q?'Sin partidos para “'+CAL_Q+'”.':'Sin partidos en esta vista.')+'</div>';
+  box.innerHTML=body;
 }
+function calType(q){
+  CAL_Q=q;
+  var x=document.querySelector(".calx"); if(x) x.style.visibility=q?"visible":"hidden";
+  renderCalResults();
+}
+function calClear(){ CAL_Q=""; var si=document.getElementById("calSearch"); if(si){ si.value=""; } var x=document.querySelector(".calx"); if(x) x.style.visibility="hidden"; renderCalResults(); if(si) si.focus(); }
+var _engName=null;
+function engName(ab){ if(!_engName){ _engName={}; for(var k in ALIAS){ if(!_engName[ALIAS[k]]) _engName[ALIAS[k]]=k; } } return _engName[ab]||""; }
 function chip(id,label){ return '<button class="chip'+(CAL_FILTER===id?" active":"")+'" data-c="'+id+'">'+label+'</button>'; }
 function calRow(m){
   var h=flagName(m.home.abbr), a=flagName(m.away.abbr), ws=winnerSide(m);
@@ -966,7 +990,7 @@ function calRow(m){
     mid='<div class="mid"><span class="vs">VS</span></div>';
   }
   var when= isFinished(m)? '<div class="when">'+phaseLabel(m.phase)+'</div>'
-          : '<div class="when"><b>'+bogota(m.date,{hour:"2-digit",minute:"2-digit"})+'</b> COL<br>'+phaseLabel(m.phase)+'</div>';
+          : '<div class="when"><b>'+bogota(m.date,{hour:"2-digit",minute:"2-digit"})+'</b> '+TZLABEL+'<br>'+phaseLabel(m.phase)+'</div>';
   function nm(side,fl,key,right){
     var cls="tm"+(right?" r":"")+(ws!==0&&(((key==="H"&&ws>0)||(key==="A"&&ws<0)))?"":"");
     var win=(ws!==0&&((key==="H"&&ws>0)||(key==="A"&&ws<0)));
@@ -1020,7 +1044,7 @@ function myTeamBand(){
     info='<b style="color:var(--neon)">● EN VIVO</b> vs <span class="opp">'+o.f+' '+o.es+'</span> · '+(live.home.score||0)+'-'+(live.away.score||0);
   } else if(next){
     var o2=T(oppOf(next,ab));
-    info='Próximo vs <span class="opp">'+o2.f+' '+o2.es+'</span> · '+bogota(next.date,{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})+' COL · <span id="myCd" data-d="'+next.date+'"></span>';
+    info='Próximo vs <span class="opp">'+o2.f+' '+o2.es+'</span> · '+bogota(next.date,{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})+' '+TZLABEL+' · <span id="myCd" data-d="'+next.date+'"></span>';
   } else if(last){
     var ol=T(oppOf(last,ab)), ws=winnerSide(last), iAmHome=last.home.abbr===ab;
     var res=(iAmHome&&ws>0)||(!iAmHome&&ws<0)?"✅":ws===0?"➖":"❌";
@@ -1029,9 +1053,23 @@ function myTeamBand(){
   var pos=myGroupPos(ab);
   var posTxt=pos? ('Grupo '+t.g+'<br><b style="color:var(--gold)">'+pos+'.º</b>') : ('Grupo '+t.g);
   return '<div class="myband"><div class="myfl">'+t.f+'</div>'+
-    '<div class="myinfo"><div class="mytt">Tu Selección · '+t.es+'</div><div class="mysub">'+info+'</div></div>'+
+    '<div class="myinfo"><div class="mytt">Tu Selección · '+t.es+
+      ' <select class="mysel" onchange="setMyTeam(this.value)" title="Cambiar selección">'+teamOptions(ab)+'</select></div>'+
+      '<div class="mysub">'+info+'</div></div>'+
     '<div class="mypos">'+posTxt+'</div></div>';
 }
+function teamOptions(sel){
+  var byG={}; for(var ab in TEAMS){ (byG[TEAMS[ab].g]=byG[TEAMS[ab].g]||[]).push(ab); }
+  var html=""; Object.keys(byG).sort().forEach(function(L){
+    html+='<optgroup label="Grupo '+L+'">';
+    byG[L].sort(function(a,b){return T(a).es<T(b).es?-1:1;}).forEach(function(ab){
+      html+='<option value="'+ab+'"'+(ab===sel?' selected':'')+'>'+T(ab).es+'</option>';
+    });
+    html+='</optgroup>';
+  });
+  return html;
+}
+function setMyTeam(ab){ if(!TEAMS[ab])return; MY_TEAM=ab; try{localStorage.setItem("myteam",ab);}catch(e){} renderAll(); }
 var _myCdTimer=null;
 function startMyCountdown(){
   if(_myCdTimer){ clearInterval(_myCdTimer); _myCdTimer=null; }
@@ -1159,31 +1197,9 @@ function demoCelebrate(){
   celebrate(team, "DEMO · ¡"+T(team).es+" anota!", sc);
 }
 
-/* ---- Ventana "Ver en vivo": transmisiones oficiales ---- */
-var WATCH=[
-  {n:"Gol Caracol", t:"Gratis · señal abierta", u:"https://www.golcaracol.com/", free:true},
-  {n:"Canal RCN",   t:"Gratis · señal abierta", u:"https://www.canalrcn.com/senal-en-vivo", free:true},
-  {n:"Ditu",        t:"Gratis · streaming",     u:"https://www.ditu.com/", free:true},
-  {n:"DSports / DGO", t:"Los 104 · suscripción", u:"https://www.dgo.com/", free:false}
-];
-function openWatchById(id){ for(var i=0;i<STATE.matches.length;i++){ if(STATE.matches[i].id===id){ openWatch(STATE.matches[i]); return; } } }
-function openWatch(m){
-  var w=document.getElementById("watch"); if(!w) return;
-  var h=T(m.home.abbr), a=T(m.away.abbr);
-  var title=document.getElementById("wTitle");
-  title.innerHTML=h.f+' '+h.es+'  vs  '+a.f+' '+a.es+(isLive(m)?'  <span style="color:var(--neon)">· EN VIVO</span>':'');
-  var fr=document.getElementById("wFrame"); try{ fr.src=WATCH[0].u; }catch(e){}
-  var html="";
-  for(var i=0;i<WATCH.length;i++){ var s=WATCH[i];
-    html+='<a class="'+(s.free?"free":"")+'" href="'+s.u+'" target="_blank" rel="noopener">'+s.n+'<b>'+s.t+'</b></a>';
-  }
-  document.getElementById("wSrc").innerHTML=html;
-  w.classList.add("show");
-}
-function closeWatch(){ var w=document.getElementById("watch"); if(!w)return; w.classList.remove("show"); var fr=document.getElementById("wFrame"); if(fr){ try{ fr.src="about:blank"; }catch(e){} } }
-
 function init(){
   applyFlags(); // banderas: emoji en Apple/Android, mini-bandera CSS en Windows
+  try{ var sv=localStorage.getItem("myteam"); if(sv&&TEAMS[sv]) MY_TEAM=sv; }catch(e){}
   document.querySelectorAll(".tab").forEach(function(t){
     t.addEventListener("click",function(){ setView(t.getAttribute("data-v")); });
   });
@@ -1194,8 +1210,6 @@ function init(){
   document.getElementById("syncBtn").addEventListener("click",function(){ fetchData(true); });
   var sb=document.getElementById("soundBtn"); if(sb) sb.addEventListener("click",toggleSound);
   var cb=document.getElementById("celebBtn"); if(cb) cb.addEventListener("click",demoCelebrate);
-  var wc=document.getElementById("wClose"); if(wc) wc.addEventListener("click",closeWatch);
-  var wv=document.getElementById("watch"); if(wv) wv.addEventListener("click",function(e){ if(e.target===wv) closeWatch(); });
 
   startFX();
   startIntro();

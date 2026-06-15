@@ -1410,8 +1410,9 @@ function renderTimeline(d,m){
   var leg='';
   if(m){ leg='<div class="tleg"><span class="d h"></span>'+esc(T(m.home.abbr).es)+'<span class="d a"></span>'+esc(T(m.away.abbr).es)+'</div>'; }
   var rows=items.map(function(it){
+    var mm=it.min? (esc(String(it.min).replace(/['’\s]+$/,""))+"'") : "";
     return '<div class="tlr '+it.side.toLowerCase()+(it.kind==="goal"?" goal":"")+'">'+
-      '<span class="tmin">'+esc(it.min||"")+"'</span>"+
+      '<span class="tmin">'+mm+'</span>'+
       '<span class="tdot"></span><span class="tic">'+it.icon+'</span>'+
       '<span class="tdesc">'+esc(it.desc)+'</span></div>';
   }).join("");

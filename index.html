@@ -509,6 +509,7 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
         </select>
         <span id="count" class="count">—</span>
       </div>
+      <button class="btn iconb" id="notifyBtn" title="Notificar goles al celular">🔕</button>
       <button class="btn iconb" id="soundBtn" title="Activar sonido de estadio">🔈</button>
       <button class="btn iconb" id="celebBtn" title="Probar celebración de gol">🎉</button>
       <button class="btn" id="syncBtn">↻ Sincronizar</button>
@@ -787,6 +788,7 @@ function applyData(list, detectGoals){
   STATE._goals=goals;
   renderAll();
   maybeCelebrate();
+  notifyGoals();                   // 🔔 notificación al celular si hay gol nuevo
   if(DETAIL.open) fetchDetail();   // actualiza alineaciones/cambios mientras el detalle está abierto
 }
 
@@ -1502,9 +1504,65 @@ function renderStats(d,m){
   box.innerHTML=html||'<div class="dempty">Sin estadísticas todavía.</div>';
 }
 
+/* ============================================================
+   NOTIFICACIONES DE GOL (iPhone y Android)
+   Funcionan con la app abierta o instalada y corriendo. El push con la
+   app totalmente cerrada requeriría un servidor (no disponible en GitHub Pages).
+   ============================================================ */
+var NOTIFY=false, SWREG=null;
+function notifSupported(){ return ("Notification" in window); }
+function updateNotifyBtn(){ var b=document.getElementById("notifyBtn"); if(b) b.textContent=NOTIFY?"🔔":"🔕"; }
+function reqPerm(cb){
+  try{ var r=Notification.requestPermission(function(p){cb(p);}); if(r&&r.then) r.then(cb); }
+  catch(e){ cb("denied"); }
+}
+function showNotif(title,opts){
+  try{ if(SWREG&&SWREG.showNotification){ SWREG.showNotification(title,opts); return; } }catch(e){}
+  try{ new Notification(title,opts); }catch(e){}
+}
+function toggleNotify(){
+  if(!notifSupported()){
+    alert("Tu navegador no soporta notificaciones. En iPhone, primero añade la app a la pantalla de inicio (Compartir → Añadir a inicio) y ábrela desde ahí.");
+    return;
+  }
+  if(!NOTIFY){
+    reqPerm(function(p){
+      if(p==="granted"){
+        NOTIFY=true; try{localStorage.setItem("notify","1");}catch(e){} updateNotifyBtn();
+        showNotif("🔔 Notificaciones activadas",{body:"Te avisaré cuando haya un gol en un partido en vivo.",icon:"icon-192.png",badge:"icon-192.png",vibrate:[60,30,60]});
+      } else {
+        NOTIFY=false; updateNotifyBtn();
+        if(p==="denied") alert("Las notificaciones están bloqueadas. Actívalas para este sitio en los ajustes del navegador.");
+      }
+    });
+  } else {
+    NOTIFY=false; try{localStorage.removeItem("notify");}catch(e){} updateNotifyBtn();
+  }
+}
+function notifyGoal(m,scorer){
+  if(!NOTIFY || !notifSupported() || Notification.permission!=="granted") return;
+  var h=T(m.home.abbr), a=T(m.away.abbr);
+  var title="⚽ ¡GOL! "+h.es+" "+(m.home.score||0)+"-"+(m.away.score||0)+" "+a.es;
+  var body=(scorer?scorer+" · ":"")+phaseLabel(m.phase)+(m.clock?" · "+m.clock:"");
+  showNotif(title,{ body:body, icon:"icon-192.png", badge:"icon-192.png", tag:"goal-"+m.id+"-"+((m.home.score||0)+(m.away.score||0)), renotify:true, vibrate:[90,40,90] });
+}
+function notifyGoals(){
+  if(!NOTIFY || !STATE._goals) return;
+  for(var id in STATE._goals){ if(!STATE._goals[id]) continue;
+    var m=matchById(id); if(!m) continue;
+    var scorer=""; for(var k=m.details.length-1;k>=0;k--){ if(m.details[k].goal){ scorer=m.details[k].who; break; } }
+    notifyGoal(m, scorer);
+  }
+}
+
 function init(){
   applyFlags(); // banderas: emoji en Apple/Android, mini-bandera CSS en Windows
   try{ var sv=localStorage.getItem("myteam"); if(sv&&TEAMS[sv]) MY_TEAM=sv; }catch(e){}
+  // Service Worker + estado de notificaciones
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").then(function(r){ SWREG=r; }).catch(function(){}); }
+  try{ if(localStorage.getItem("notify")==="1" && notifSupported() && Notification.permission==="granted") NOTIFY=true; }catch(e){}
+  updateNotifyBtn();
+  var nb=document.getElementById("notifyBtn"); if(nb) nb.addEventListener("click",toggleNotify);
   document.querySelectorAll(".tab").forEach(function(t){
     t.addEventListener("click",function(){ setView(t.getAttribute("data-v")); });
   });

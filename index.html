@@ -671,6 +671,23 @@ function phaseOf(dateStr){
   if(u >= U(6,19)) return "final";               // 19 jul
   return "knockout";
 }
+/* Fase según la etiqueta oficial de ESPN (season.slug) — evita errores por zona horaria */
+function slugPhase(s){
+  s=(s||"").toLowerCase(); if(!s) return null;
+  if(s.indexOf("group")>=0) return "group";
+  if(s.indexOf("32")>=0) return "r32";
+  if(s.indexOf("16")>=0) return "r16";
+  if(s.indexOf("quarter")>=0) return "qf";
+  if(s.indexOf("semi")>=0) return "sf";
+  if(s.indexOf("third")>=0||s.indexOf("3rd")>=0) return "third";
+  if(s.indexOf("final")>=0) return "final";
+  return null;
+}
+/* Combina etiqueta oficial (si existe) con la ventana de fecha como respaldo */
+function phaseFor(e){
+  var sp=slugPhase(e&&e.season&&e.season.slug);
+  return sp || phaseOf(e&&e.date);
+}
 
 /* ============================================================
    NORMALIZACIÓN
@@ -725,7 +742,7 @@ function normalizeEvent(e){
       clock:(c.status&&c.status.displayClock)||"",
       detail:(c.status&&c.status.type&&c.status.type.shortDetail)||"",
       venue:(c.venue&&c.venue.fullName)||"",
-      phase:phaseOf(e.date),
+      phase:phaseFor(e),
       home:side(H), away:side(A), details:details
     };
   }catch(err){ return null; }

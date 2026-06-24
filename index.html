@@ -238,6 +238,50 @@ footer code{color:var(--neon-dim);font-family:var(--mono);font-size:10px}
   *{animation:none!important;transition:none!important}
 }
 
+/* ====== ENERGÍA / "SUPER FULL" ====== */
+/* Brillo animado en el título */
+.brand h1{position:relative;background-size:200% auto;animation:sheen 6s linear infinite}
+@keyframes sheen{to{background-position:200% center}}
+
+/* Cinta de resultados (ticker tipo transmisión) */
+.ticker{position:relative;overflow:hidden;margin:0 0 16px;border-radius:12px;height:40px;display:flex;align-items:center;
+  border:1px solid var(--panel-brd);background:linear-gradient(90deg, rgba(10,24,48,.75), rgba(10,24,48,.45));backdrop-filter:blur(8px);box-shadow:var(--shadow)}
+.tk-label{position:absolute;left:0;top:0;bottom:0;z-index:3;display:flex;align-items:center;gap:6px;padding:0 12px;
+  font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.12em;color:#04140c;
+  background:linear-gradient(160deg,var(--neon),var(--neon-dim));box-shadow:6px 0 16px rgba(0,0,0,.4)}
+.tk-label.lv::before{content:"";width:7px;height:7px;border-radius:50%;background:#04140c;animation:blink 1s infinite}
+.tk-track{display:flex;align-items:center;gap:0;white-space:nowrap;padding-left:120px;animation:tkscroll 30s linear infinite;will-change:transform}
+.ticker:hover .tk-track{animation-play-state:paused}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk-it{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--txt);padding:0 4px}
+.tk-it .fl{font-size:15px}
+.tk-it .sc{font-family:var(--mono);font-weight:700}
+.tk-it.live .sc{color:var(--neon)}
+.tk-it .lvdot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:blink 1s infinite}
+.tk-it .ab{color:var(--mut);font-weight:600}
+.tk-sep{color:var(--mut2);padding:0 14px;opacity:.6}
+
+/* Tarjetas con color de equipo + barra superior degradada */
+.card::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:3;
+  background:linear-gradient(90deg, var(--hc,var(--neon)), var(--ac,var(--neon-dim)))}
+.card:hover{border-color:rgba(120,180,255,.3)}
+
+/* Marco luminoso en partidos EN VIVO */
+.live-card::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1.5px solid var(--neon);z-index:2;pointer-events:none;
+  box-shadow:inset 0 0 14px rgba(51,255,138,.30);animation:livepulse 1.7s ease-in-out infinite}
+@keyframes livepulse{0%,100%{opacity:.45}50%{opacity:1}}
+.live-card{box-shadow:var(--shadow), 0 0 22px -6px rgba(51,255,138,.45)}
+
+/* Resplandor de color de equipo en el hero */
+.hglow{position:absolute;top:-15%;bottom:-15%;width:55%;filter:blur(55px);opacity:.45;pointer-events:none;z-index:0;border-radius:50%}
+.hglow.h{left:-12%} .hglow.a{right:-12%}
+.hero .tagrow,.hero .board,.hero .minute,.hero .countdown,.hero .prog,.hero .heroSO,.hero>.dhint{position:relative;z-index:1}
+
+/* Títulos de sección con acento luminoso */
+.secttl{position:relative;padding-left:14px}
+.secttl::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:5px;height:18px;border-radius:3px;
+  background:linear-gradient(180deg,var(--neon),var(--neon-dim));box-shadow:0 0 12px rgba(51,255,138,.6)}
+
 /* ====== FONDO VIVO (canvas) ====== */
 #fx{position:fixed;inset:0;z-index:0;pointer-events:none}
 
@@ -518,6 +562,8 @@ body.shake{animation:shk .5s cubic-bezier(.36,.07,.19,.97)}
       <span id="notice" class="notice">⚠ Sin conexión · datos previos</span>
     </div>
   </header>
+
+  <div id="ticker" class="ticker" style="display:none"></div>
 
   <section class="hero" id="hero"></section>
 
@@ -896,6 +942,8 @@ function renderHero(){
                : '<div class="countdown" id="cd"></div>';
   var phaseLbl = phaseLabel(m.phase);
   el.innerHTML =
+    '<div class="hglow h" style="background:radial-gradient(circle,'+teamHex(m.home.abbr)+'66,transparent 70%)"></div>'+
+    '<div class="hglow a" style="background:radial-gradient(circle,'+teamHex(m.away.abbr)+'66,transparent 70%)"></div>'+
     '<div class="tagrow">'+tag+'<span class="venue">'+phaseLbl+(m.venue?' · '+m.venue:'')+'</span></div>'+
     '<div class="board">'+
       '<div class="side"><div class="fl">'+h.f+'</div><div class="nm">'+h.nm+'</div><div class="ab">'+(m.home.abbr||"")+'</div></div>'+
@@ -943,7 +991,8 @@ function matchCard(m){
   }
   var flash=(STATE._goals&&STATE._goals[m.id])?" goalflash":"";
   var mine=(m.home.abbr===MY_TEAM||m.away.abbr===MY_TEAM)?" mine":"";
-  return '<div class="card'+flash+mine+'" onclick="openDetail(\''+m.id+'\')">'+
+  var liveC=isLive(m)?" live-card":"";
+  return '<div class="card'+flash+mine+liveC+'" style="--hc:'+teamHex(m.home.abbr)+';--ac:'+teamHex(m.away.abbr)+'" onclick="openDetail(\''+m.id+'\')">'+
     '<div class="crow">'+st+'<span class="cven">'+phaseLabel(m.phase)+(m.venue?' · '+m.venue:'')+'</span></div>'+
     row(m.home,h,"H")+row(m.away,a,"A")+ev+
     '<div class="dhint">toca para ver alineaciones y detalles</div>'+
@@ -1138,7 +1187,44 @@ function calRow(m){
 /* ============================================================
    RENDER GLOBAL + TABS
    ============================================================ */
-function renderAll(){ renderHero(); renderLive(); renderGroups(); renderBracket(); renderCalendar(); }
+/* Color principal de cada selección (para acentos vibrantes) */
+function teamHex(ab){
+  var c=COLORS[ab]; if(!c) return "#4a96ff";
+  for(var i=0;i<c.length;i++){ var h=c[i].toLowerCase(); if(h!=="#ffffff"&&h!=="#fff"&&h!=="#000000"&&h!=="#000") return c[i]; }
+  return c[0];
+}
+/* Cinta de resultados estilo transmisión (con caché anti-parpadeo) */
+var _tkCache="";
+function buildTicker(){
+  var el=document.getElementById("ticker"); if(!el) return;
+  var live=STATE.matches.filter(isLive);
+  var fin=STATE.matches.filter(isFinished).sort(function(a,b){return ms(b.date)-ms(a.date);}).slice(0,10);
+  function it(m,kind){
+    var h=T(m.home.abbr),a=T(m.away.abbr);
+    var sc=(m.home.score==null?0:m.home.score)+"-"+(m.away.score==null?0:m.away.score);
+    var mid = kind==="pre"? '<span class="sc" style="color:var(--mut2)">vs</span>' : '<span class="sc">'+sc+'</span>';
+    var tail = kind==="fin"? ' <span class="ab">FIN</span>' : kind==="pre"? ' <span class="ab">'+bogota(m.date,{hour:"2-digit",minute:"2-digit"})+'</span>':'';
+    return '<span class="tk-it '+(kind==="live"?"live":"")+'">'+(kind==="live"?'<span class="lvdot"></span>':'')+
+      '<span class="fl">'+h.f+'</span><span class="ab">'+(m.home.abbr||"")+'</span> '+mid+' <span class="fl">'+a.f+'</span><span class="ab">'+(m.away.abbr||"")+'</span>'+tail+'</span>';
+  }
+  var items=[];
+  live.forEach(function(m){items.push(it(m,"live"));});
+  fin.forEach(function(m){items.push(it(m,"fin"));});
+  if(!items.length){
+    var today=todayBogotaKey();
+    STATE.matches.filter(function(m){return m.state==="pre" && dayKey(m.date)===today;}).slice(0,10).forEach(function(m){items.push(it(m,"pre"));});
+  }
+  if(!items.length){ el.style.display="none"; _tkCache=""; return; }
+  var label = live.length? '<span class="tk-label lv">EN VIVO</span>' : '<span class="tk-label">RESULTADOS</span>';
+  var content=items.join('<span class="tk-sep">•</span>');
+  var key=label+"::"+content;
+  if(key===_tkCache){ el.style.display="flex"; return; }   // sin cambios: no reiniciar el scroll
+  _tkCache=key;
+  el.style.display="flex";
+  var dur=Math.max(24, items.length*6);
+  el.innerHTML=label+'<div class="tk-track" style="animation-duration:'+dur+'s">'+content+'<span class="tk-sep">•</span>'+content+'</div>';
+}
+function renderAll(){ renderHero(); buildTicker(); renderLive(); renderGroups(); renderBracket(); renderCalendar(); }
 
 function setView(name){
   var tabs=document.querySelectorAll(".tab");

@@ -1135,11 +1135,20 @@ function knockoutByRound(){
   for(var k in R){ R[k].sort(function(a,b){ return (parseInt(a.id,10)||0)-(parseInt(b.id,10)||0); }); for(var i=0;i<R[k].length;i++) R[k][i]._idx=i+1; }
   return R;
 }
-/* feeder: por etiqueta (placeholder) o, si ya hay equipo real, por el ganador del partido previo */
+/* Estructura FIJA del cuadro FIFA 2026 (verificada con las etiquetas oficiales de ESPN).
+   ronda -> nº de partido -> [partido previo del local, partido previo del visitante] */
+var TREE={
+  r16:{1:[1,3],2:[4,5],3:[2,6],4:[7,8],5:[11,12],6:[9,10],7:[14,16],8:[13,15]},
+  qf:{1:[1,2],2:[5,6],3:[3,4],4:[7,8]},
+  sf:{1:[1,2],2:[3,4]},
+  final:{1:[1,2]}
+};
 function feederFor(m,key,R){
-  var pr=PREVR[m.phase]; if(!pr) return null; var s=m[key];
-  if(s.ph && s.ph.r===pr){ var arr=R[pr]||[]; for(var i=0;i<arr.length;i++) if(arr[i]._idx===s.ph.n) return arr[i]; return null; }
-  if(s.abbr && TEAMS[s.abbr]){ var a2=R[pr]||[]; for(var j=0;j<a2.length;j++) if(isFinished(a2[j]) && winnerAbbrOf(a2[j])===s.abbr) return a2[j]; }
+  var pr=PREVR[m.phase]; if(!pr) return null;
+  var t=TREE[m.phase]; if(!t||!t[m._idx]) return null;
+  var n=(key==="home")? t[m._idx][0] : t[m._idx][1];
+  var arr=R[pr]||[];
+  for(var i=0;i<arr.length;i++) if(arr[i]._idx===n) return arr[i];
   return null;
 }
 function bracketOrder(R){

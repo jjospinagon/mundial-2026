@@ -1185,7 +1185,10 @@ function renderBracket(){
   if(!any){ v.innerHTML='<div class="secttl">Fase Final · Cuadro</div><div class="emptol">El cuadro se completa al cerrar la fase de grupos (28 jun). Se llena solo con los clasificados reales, conectando cada llave con sus dos partidos previos.</div>'; return; }
   var ord=bracketOrder(R);
   var defs=[["r32","16avos","28 jun – 3 jul"],["r16","Octavos","4 – 7 jul"],["qf","Cuartos","9 – 11 jul"],["sf","Semis","14 – 15 jul"],["final","Final","19 jul · MetLife"]];
-  var cols='<div class="brk">'+defs.map(function(d,i){ return bColHTML(ord[d[0]], i===defs.length-1, [d[1],d[2]]); }).join("")+'</div>';
+  // altura proporcional al nº de partidos de 16avos: así cada ronda se espacia bien y los Octavos abarcan a sus pares
+  var leaves=Math.max(8, ord.r32.length||16);
+  var H=leaves*86;
+  var cols='<div class="brk" style="height:'+H+'px">'+defs.map(function(d,i){ return bColHTML(ord[d[0]], i===defs.length-1, [d[1],d[2]]); }).join("")+'</div>';
   var third = R.third.length? '<div class="third"><div class="thlbl">🥉 Tercer puesto · 18 jul</div>'+btieHTML(R.third[0])+'</div>':'';
   v.innerHTML='<div class="secttl">Fase Final · Cuadro</div><div class="bracket-hint">Cada llave conecta con sus dos partidos previos. Toca un partido para ver detalles.</div><div class="brkwrap">'+cols+'</div>'+third;
 }

@@ -291,11 +291,14 @@ footer code{color:var(--neon-dim);font-family:var(--mono);font-size:10px}
 .bh{text-align:center;padding:4px 0 10px}
 .bh b{display:block;font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--neon)}
 .bh span{font-size:9px;color:var(--mut2);letter-spacing:.04em}
-.bcoll{flex:1;display:flex;flex-direction:column;justify-content:space-around;position:relative}
+.bcoll{flex:1;display:flex;flex-direction:column;position:relative}
 .bcolwrap.last .bcoll{justify-content:center}
-.bpair{flex:1;display:flex;flex-direction:column;justify-content:space-around;position:relative}
+.bpair{flex:1 1 0;display:flex;flex-direction:column;position:relative;min-height:0}
+.bslot{flex:1 1 0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;min-height:0}
 .bcolwrap:not(.last) .bpair::after{content:"";position:absolute;right:1px;top:25%;bottom:25%;width:2px;background:var(--panel-brd)}
 .bcolwrap:not(.last) .bpair::before{content:"";position:absolute;right:-13px;top:50%;width:13px;height:2px;background:var(--panel-brd);z-index:1}
+.bcolwrap:not(.last) .bslot::after{content:"";position:absolute;right:1px;top:50%;width:12px;height:2px;background:var(--panel-brd)}
+.bcolwrap:not(.last) .bslot{position:relative}
 .btie{position:relative;background:var(--panel);border:1px solid var(--panel-brd);border-radius:10px;padding:6px 9px;margin:4px 0;
   backdrop-filter:blur(6px);box-shadow:var(--shadow);cursor:pointer;transition:transform .12s ease,border-color .2s}
 .btie:hover{transform:translateY(-1px);border-color:rgba(120,180,255,.4)}
@@ -1175,7 +1178,7 @@ function btieHTML(m){
 function bColHTML(arr,last,head){
   var inner;
   if(last){ inner=btieHTML(arr.length?arr[0]:null); }
-  else { inner=""; for(var i=0;i<arr.length;i+=2){ inner+='<div class="bpair">'+btieHTML(arr[i])+btieHTML(arr[i+1])+'</div>'; } if(!arr.length) inner='<div class="bpair">'+btieHTML(null)+btieHTML(null)+'</div>'; }
+  else { inner=""; for(var i=0;i<arr.length;i+=2){ inner+='<div class="bpair"><div class="bslot">'+btieHTML(arr[i])+'</div><div class="bslot">'+btieHTML(arr[i+1])+'</div></div>'; } if(!arr.length) inner='<div class="bpair"><div class="bslot">'+btieHTML(null)+'</div><div class="bslot">'+btieHTML(null)+'</div></div>'; }
   return '<div class="bcolwrap'+(last?" last":"")+'"><div class="bh"><b>'+head[0]+'</b><span>'+head[1]+'</span></div><div class="bcoll">'+inner+'</div></div>';
 }
 function renderBracket(){

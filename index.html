@@ -1146,18 +1146,57 @@ var TREE={
   sf:{1:[1,2],2:[3,4]},
   final:{1:[1,2]}
 };
-function feederFor(m,key,R){
-  var pr=PREVR[m.phase]; if(!pr) return null;
-  var t=TREE[m.phase]; if(!t||!t[m._idx]) return null;
-  var n=(key==="home")? t[m._idx][0] : t[m._idx][1];
-  var arr=R[pr]||[];
-  for(var i=0;i<arr.length;i++) if(arr[i]._idx===n) return arr[i];
+/* ---------------------------------------------------------------
+   Cuadro derivado de los DATOS REALES de ESPN (no de un árbol fijo).
+   Para cada llave se identifica su partido previo así:
+     1) Si el lado ya tiene equipo  -> el partido previo que ESE equipo ganó (infalible).
+     2) Si es marcador "Por definir" -> la etiqueta ph {r,n} de ESPN. En rondas
+        superiores (sf, qf, r16) la numeración ph coincide con _idx; en 16avos NO
+        (el orden por fecha ≠ posición del cuadro), así que esos cupos vacíos se
+        rellenan con los partidos restantes sin repetir. Como ambos lados están
+        "Por definir", su posición exacta es solo estética.
+   Esto corrige el desorden de parejas que producía el árbol fijo.
+---------------------------------------------------------------- */
+function prevByTeam(arr,abbr,used){
+  if(!abbr) return null;
+  for(var i=0;i<arr.length;i++){ if(!used[arr[i].id] && winnerAbbrOf(arr[i])===abbr) return arr[i]; }
   return null;
 }
+function buildPrevRound(parents,R){
+  var pr=null,i;
+  for(i=0;i<parents.length;i++){ if(parents[i]){ pr=PREVR[parents[i].phase]; break; } }
+  var res=[];
+  if(!pr){ for(i=0;i<parents.length;i++){ res.push(null,null); } return res; }
+  var arr=(R[pr]||[]).slice(), used={}, slots=[];
+  parents.forEach(function(p){ slots.push(p?{p:p,k:"home"}:null); slots.push(p?{p:p,k:"away"}:null); });
+  res=new Array(slots.length);
+  var pending=[];
+  slots.forEach(function(s,idx){
+    if(!s){ res[idx]=null; return; }
+    var sd=s.p[s.k];
+    // 1) equipo conocido -> partido previo que ganó
+    if(sd && sd.abbr && TEAMS[sd.abbr]){
+      var fm=prevByTeam(arr,sd.abbr,used);
+      if(fm){ res[idx]=fm; used[fm.id]=1; return; }
+    }
+    // 2) ph por _idx (fiable en sf/qf/r16, NO en r32)
+    if(sd && sd.ph && sd.ph.r===pr && pr!=="r32"){
+      for(var j=0;j<arr.length;j++){ if(!used[arr[j].id] && arr[j]._idx===sd.ph.n){ res[idx]=arr[j]; used[arr[j].id]=1; return; } }
+    }
+    pending.push(idx); res[idx]=null;
+  });
+  // 3) cupos vacíos -> partidos restantes (orden cronológico) sin repetir
+  var rest=arr.filter(function(x){return !used[x.id];}).sort(function(a,b){return (parseInt(a.id,10)||0)-(parseInt(b.id,10)||0);});
+  var ri=0;
+  pending.forEach(function(idx){ var m=rest[ri++]; if(m){ res[idx]=m; used[m.id]=1; } });
+  return res;
+}
 function bracketOrder(R){
-  var ord={final:R.final.slice(0,1),sf:[],qf:[],r16:[],r32:[]};
-  function exp(parents){ var out=[]; for(var i=0;i<parents.length;i++){ var p=parents[i]; if(!p){out.push(null,null);} else {out.push(feederFor(p,"home",R)); out.push(feederFor(p,"away",R));} } return out; }
-  ord.sf=exp(ord.final); ord.qf=exp(ord.sf); ord.r16=exp(ord.qf); ord.r32=exp(ord.r16);
+  var ord={final:R.final.slice(0,1)};
+  ord.sf =buildPrevRound(ord.final,R);
+  ord.qf =buildPrevRound(ord.sf,R);
+  ord.r16=buildPrevRound(ord.qf,R);
+  ord.r32=buildPrevRound(ord.r16,R);
   return ord;
 }
 function bSlot(side){

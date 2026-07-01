@@ -1138,65 +1138,44 @@ function knockoutByRound(){
   for(var k in R){ R[k].sort(function(a,b){ return (parseInt(a.id,10)||0)-(parseInt(b.id,10)||0); }); for(var i=0;i<R[k].length;i++) R[k][i]._idx=i+1; }
   return R;
 }
-/* Estructura FIJA del cuadro FIFA 2026 (verificada con las etiquetas oficiales de ESPN).
-   ronda -> nº de partido -> [partido previo del local, partido previo del visitante] */
-var TREE={
-  r16:{1:[1,3],2:[4,5],3:[2,6],4:[7,8],5:[11,12],6:[9,10],7:[14,16],8:[13,15]},
-  qf:{1:[1,2],2:[5,6],3:[3,4],4:[7,8]},
-  sf:{1:[1,2],2:[3,4]},
-  final:{1:[1,2]}
-};
 /* ---------------------------------------------------------------
-   Cuadro derivado de los DATOS REALES de ESPN (no de un árbol fijo).
-   Para cada llave se identifica su partido previo así:
-     1) Si el lado ya tiene equipo  -> el partido previo que ESE equipo ganó (infalible).
-     2) Si es marcador "Por definir" -> la etiqueta ph {r,n} de ESPN. En rondas
-        superiores (sf, qf, r16) la numeración ph coincide con _idx; en 16avos NO
-        (el orden por fecha ≠ posición del cuadro), así que esos cupos vacíos se
-        rellenan con los partidos restantes sin repetir. Como ambos lados están
-        "Por definir", su posición exacta es solo estética.
-   Esto corrige el desorden de parejas que producía el árbol fijo.
+   ESTRUCTURA OFICIAL DEL CUADRO FIFA 2026
+   Orden de los 16 partidos de 16avos (arriba->abajo, mitad izq luego der),
+   expresado con el _idx de cada partido (asignado por orden de id ESPN).
+   Verificado contra los datos de ESPN en todo lo comprobable:
+     CAN/MAR=[1,3]  BRA/NOR=[2,5]  PAR abre desde GER/PAR(4) vs FRA/SWE(7).
+   Cada par consecutivo alimenta un octavo; cada par de octavos un cuarto, etc.
+   Los ganadores reales se colocan por emparejamiento de equipo (infalible);
+   los cupos aún "Por definir" conservan su posición estructural correcta.
 ---------------------------------------------------------------- */
-function prevByTeam(arr,abbr,used){
-  if(!abbr) return null;
-  for(var i=0;i<arr.length;i++){ if(!used[arr[i].id] && winnerAbbrOf(arr[i])===abbr) return arr[i]; }
-  return null;
-}
-function buildPrevRound(parents,R){
-  var pr=null,i;
-  for(i=0;i<parents.length;i++){ if(parents[i]){ pr=PREVR[parents[i].phase]; break; } }
-  var res=[];
-  if(!pr){ for(i=0;i<parents.length;i++){ res.push(null,null); } return res; }
-  var arr=(R[pr]||[]).slice(), used={}, slots=[];
-  parents.forEach(function(p){ slots.push(p?{p:p,k:"home"}:null); slots.push(p?{p:p,k:"away"}:null); });
-  res=new Array(slots.length);
-  var pending=[];
-  slots.forEach(function(s,idx){
-    if(!s){ res[idx]=null; return; }
-    var sd=s.p[s.k];
-    // 1) equipo conocido -> partido previo que ganó
-    if(sd && sd.abbr && TEAMS[sd.abbr]){
-      var fm=prevByTeam(arr,sd.abbr,used);
-      if(fm){ res[idx]=fm; used[fm.id]=1; return; }
+var LEAF32=[4,7,1,3,11,12,9,8, 2,5,6,10,15,14,13,16];
+function r32ByIdx(R,ix){ var a=R.r32||[]; for(var i=0;i<a.length;i++) if(a[i]._idx===ix) return a[i]; return null; }
+/* Coloca los partidos de una ronda en el orden del cuadro: cada padre se ubica
+   sobre sus dos hijos usando el ganador (equipo) de alguno de ellos; si aún no
+   hay ganador (ambos "Por definir") se rellena sin repetir manteniendo el orden. */
+function placeRound(pool, children){
+  pool=(pool||[]).slice(); var used={}, res=[], k, i;
+  for(k=0;k<children.length/2;k++){
+    var c1=children[2*k], c2=children[2*k+1];
+    var w1=c1?winnerAbbrOf(c1):null, w2=c2?winnerAbbrOf(c2):null, found=null;
+    for(i=0;i<pool.length;i++){ if(used[pool[i].id]) continue;
+      var m=pool[i], hs=m.home.abbr, as=m.away.abbr;
+      if((w1&&(hs===w1||as===w1))||(w2&&(hs===w2||as===w2))){ found=m; break; }
     }
-    // 2) ph por _idx (fiable en sf/qf/r16, NO en r32)
-    if(sd && sd.ph && sd.ph.r===pr && pr!=="r32"){
-      for(var j=0;j<arr.length;j++){ if(!used[arr[j].id] && arr[j]._idx===sd.ph.n){ res[idx]=arr[j]; used[arr[j].id]=1; return; } }
-    }
-    pending.push(idx); res[idx]=null;
-  });
-  // 3) cupos vacíos -> partidos restantes (orden cronológico) sin repetir
-  var rest=arr.filter(function(x){return !used[x.id];}).sort(function(a,b){return (parseInt(a.id,10)||0)-(parseInt(b.id,10)||0);});
+    if(found){ used[found.id]=1; res.push(found); } else res.push(null);
+  }
+  var rest=pool.filter(function(x){return !used[x.id];}).sort(function(a,b){return (parseInt(a.id,10)||0)-(parseInt(b.id,10)||0);});
   var ri=0;
-  pending.forEach(function(idx){ var m=rest[ri++]; if(m){ res[idx]=m; used[m.id]=1; } });
+  for(k=0;k<res.length;k++){ if(!res[k]){ var mm=rest[ri++]; if(mm){ res[k]=mm; used[mm.id]=1; } } }
   return res;
 }
 function bracketOrder(R){
-  var ord={final:R.final.slice(0,1)};
-  ord.sf =buildPrevRound(ord.final,R);
-  ord.qf =buildPrevRound(ord.sf,R);
-  ord.r16=buildPrevRound(ord.qf,R);
-  ord.r32=buildPrevRound(ord.r16,R);
+  var ord={};
+  ord.r32 = LEAF32.map(function(ix){ return r32ByIdx(R,ix); });
+  ord.r16 = placeRound(R.r16, ord.r32);
+  ord.qf  = placeRound(R.qf,  ord.r16);
+  ord.sf  = placeRound(R.sf,  ord.qf);
+  ord.final = placeRound(R.final, ord.sf);
   return ord;
 }
 function bSlot(side){
